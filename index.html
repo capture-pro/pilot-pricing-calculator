@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CapturePro — Pilot Pricing Calculator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#12161c;
+    --panel:#181e26;
+    --panel-alt:#1f2830;
+    --grid:rgba(255,255,255,.035);
+    --orange:#e87020;
+    --orange-bright:#ff9142;
+    --text:#f2f0ea;
+    --text-dim:#93a0b0;
+    --text-faint:#4d5761;
+    --border:#2a3440;
+    --good:#e87020;
+    --mono:'JetBrains Mono',monospace;
+    --display:'Space Grotesk',sans-serif;
+    --body:'Inter',sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      repeating-linear-gradient(0deg, var(--grid) 0 1px, transparent 1px 48px),
+      repeating-linear-gradient(90deg, var(--grid) 0 1px, transparent 1px 48px),
+      var(--bg);
+    color:var(--text);
+    font-family:var(--body);
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+  }
+  .shell{max-width:1180px;margin:0 auto;padding:28px 20px 80px;}
+
+  /* header */
+  header{position:relative;padding:22px 24px 24px;margin-bottom:28px;border:1px solid var(--border);background:rgba(24,30,38,.55);}
+  header::before,header::after,.tick-br::before,.tick-br::after{content:'';position:absolute;width:14px;height:14px;}
+  header::before{top:-1px;left:-1px;border-top:2px solid var(--orange);border-left:2px solid var(--orange);}
+  header::after{top:-1px;right:-1px;border-top:2px solid var(--orange);border-right:2px solid var(--orange);}
+  .tick-br{position:absolute;inset:0;pointer-events:none;}
+  .tick-br::before{bottom:-1px;left:-1px;border-bottom:2px solid var(--orange);border-left:2px solid var(--orange);}
+  .tick-br::after{bottom:-1px;right:-1px;border-bottom:2px solid var(--orange);border-right:2px solid var(--orange);}
+  .wordmark{font-family:var(--display);font-weight:700;font-size:26px;letter-spacing:.5px;display:flex;align-items:baseline;gap:10px;}
+  .wordmark .pro{color:var(--orange);}
+  .wordmark .rule{width:1px;height:20px;background:var(--border);display:inline-block;}
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:2px;color:var(--text-dim);text-transform:uppercase;margin-top:6px;}
+  .subhead{font-size:13px;color:var(--text-faint);margin-top:10px;max-width:640px;line-height:1.5;}
+
+  /* layout */
+  .grid{display:grid;grid-template-columns:1fr 380px;gap:22px;align-items:start;}
+  @media (max-width:920px){.grid{grid-template-columns:1fr;}}
+
+  .panel{border:1px solid var(--border);background:var(--panel);margin-bottom:20px;}
+  .panel-head{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--border);background:var(--panel-alt);}
+  .panel-head .sq{width:8px;height:8px;background:var(--orange);flex:none;}
+  .panel-head h2{font-family:var(--display);font-size:14px;font-weight:600;letter-spacing:.4px;margin:0;text-transform:uppercase;}
+  .panel-head .note{margin-left:auto;font-family:var(--mono);font-size:10.5px;color:var(--text-faint);text-align:right;}
+  .panel-body{padding:18px;}
+
+  .field{margin-bottom:18px;}
+  .field:last-child{margin-bottom:0;}
+  .field-label{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;font-size:12.5px;color:var(--text-dim);}
+  .field-label .val{font-family:var(--mono);color:var(--orange-bright);font-size:13px;font-weight:600;}
+  .row{display:flex;gap:10px;align-items:center;}
+  input[type=range]{
+    -webkit-appearance:none;width:100%;height:3px;background:var(--border);outline:none;flex:1;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;width:15px;height:15px;border-radius:50%;background:var(--orange);
+    border:2px solid #12161c;cursor:pointer;margin-top:-6px;
+  }
+  input[type=range]::-moz-range-thumb{width:13px;height:13px;border-radius:50%;background:var(--orange);border:2px solid #12161c;cursor:pointer;}
+  input[type=range]::-webkit-slider-runnable-track{height:3px;background:var(--border);}
+  input[type=number],input[type=text]{
+    background:var(--panel-alt);border:1px solid var(--border);color:var(--text);
+    font-family:var(--mono);font-size:12.5px;padding:7px 9px;width:88px;
+  }
+  input[type=text]{width:100%;}
+  input:focus{outline:1px solid var(--orange);}
+  .helper{font-family:var(--mono);font-size:10.5px;color:var(--text-faint);margin-top:6px;}
+
+  .seg{display:flex;border:1px solid var(--border);}
+  .seg button{
+    flex:1;background:transparent;border:none;color:var(--text-dim);font-family:var(--mono);
+    font-size:11.5px;letter-spacing:.5px;padding:9px 6px;cursor:pointer;border-right:1px solid var(--border);
+    text-transform:uppercase;
+  }
+  .seg button:last-child{border-right:none;}
+  .seg button.active{background:var(--orange);color:#14161a;font-weight:700;}
+  .seg button:hover:not(.active){background:var(--panel-alt);color:var(--text);}
+
+  .chip-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;}
+  .chip{
+    background:var(--panel-alt);border:1px solid var(--border);color:var(--text-dim);
+    font-family:var(--mono);font-size:11px;padding:6px 10px;cursor:pointer;
+  }
+  .chip:hover{border-color:var(--orange);color:var(--text);}
+
+  .checkline{display:flex;align-items:center;gap:9px;font-size:12.5px;color:var(--text-dim);cursor:pointer;user-select:none;}
+  .checkline input{accent-color:var(--orange);width:15px;height:15px;}
+
+  details{border:1px solid var(--border);background:var(--panel-alt);}
+  details summary{
+    padding:12px 16px;cursor:pointer;font-family:var(--mono);font-size:11px;letter-spacing:1.5px;
+    color:var(--text-dim);text-transform:uppercase;list-style:none;display:flex;align-items:center;gap:8px;
+  }
+  details summary::-webkit-details-marker{display:none;}
+  details summary::before{content:'+';color:var(--orange);font-family:var(--mono);font-weight:700;}
+  details[open] summary::before{content:'–';}
+  details .panel-body{border-top:1px solid var(--border);}
+
+  /* results */
+  .results{position:sticky;top:20px;}
+  .results-head{background:var(--orange);color:#14161a;padding:14px 18px;font-family:var(--display);font-weight:700;font-size:14px;letter-spacing:.5px;text-transform:uppercase;}
+  .spec-group{padding:16px 18px 6px;}
+  .spec-group-title{font-family:var(--mono);font-size:10px;letter-spacing:1.5px;color:var(--text-faint);text-transform:uppercase;margin-bottom:10px;}
+  .spec-row{display:flex;align-items:baseline;gap:6px;padding:4px 0;font-size:12.5px;}
+  .spec-row .label{white-space:nowrap;color:var(--text-dim);}
+  .spec-row .leader{flex:1;border-bottom:1px dotted var(--text-faint);margin-bottom:4px;min-width:8px;}
+  .spec-row .value{white-space:nowrap;font-family:var(--mono);color:var(--text);font-weight:500;}
+  .spec-row.total .value{color:var(--orange-bright);font-weight:700;font-size:15px;}
+  .spec-row.total .label{color:var(--text);font-weight:600;}
+  .spec-row.sub .label{color:var(--text-faint);font-size:11.5px;padding-left:8px;}
+  .spec-row.sub .value{color:var(--text-dim);font-size:11.5px;}
+  hr.div{border:none;border-top:1px solid var(--border);margin:12px 0;}
+  .flag{background:rgba(232,112,32,.1);border:1px solid rgba(232,112,32,.35);color:var(--orange-bright);
+    font-family:var(--mono);font-size:10.5px;padding:8px 10px;margin:10px 18px;line-height:1.5;}
+  .proj-table{width:100%;border-collapse:collapse;margin-top:4px;font-size:12px;}
+  .proj-table th{text-align:right;font-family:var(--mono);font-size:10px;color:var(--text-faint);font-weight:500;padding:4px 0 8px;text-transform:uppercase;letter-spacing:.5px;}
+  .proj-table th:first-child,.proj-table td:first-child{text-align:left;}
+  .proj-table td{text-align:right;font-family:var(--mono);padding:5px 0;border-top:1px solid var(--border);color:var(--text);}
+  .proj-table td:first-child{color:var(--text-dim);font-family:var(--body);}
+
+  .footnote{font-size:11px;color:var(--text-faint);line-height:1.6;padding:14px 18px 18px;}
+  .footnote b{color:var(--text-dim);}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <header>
+    <div class="tick-br"></div>
+    <div class="wordmark">CAPTURE<span class="pro">PRO</span><span class="rule"></span><span style="font-size:14px;color:var(--text-dim);font-weight:500;">Capture-as-a-Service</span></div>
+    <div class="eyebrow">Pilot Pricing Calculator — Field Payout &amp; Customer Rate Model</div>
+    <div class="subhead">Model what a single capture visit is worth — to the pilot and to the customer — based on site size, walk pattern, travel, and visit frequency. Every input below is adjustable; tune it as real field data comes in from Drone Brothers routes.</div>
+  </header>
+
+  <div class="grid">
+    <!-- LEFT: INPUTS -->
+    <div>
+
+      <div class="panel">
+        <div class="panel-head"><div class="sq"></div><h2>Job &amp; Site</h2><div class="note">WHO / WHERE / HOW BIG</div></div>
+        <div class="panel-body">
+          <div class="field">
+            <div class="field-label"><span>Job location</span></div>
+            <input type="text" id="location" value="Des Moines, IA" style="width:100%">
+            <div class="helper">Informational — used in labeling only, not in the calculation.</div>
+          </div>
+
+          <div class="field">
+            <div class="field-label"><span>Site area to capture</span><span class="val"><span id="areaVal-display"></span> sq ft</span></div>
+            <div class="row">
+              <input type="range" id="areaVal" min="5000" max="2000000" step="5000" value="600000">
+              <input type="number" id="areaVal-num" min="5000" max="2000000" step="1000" value="600000">
+            </div>
+            <div class="helper" id="areaSqm"></div>
+          </div>
+
+          <div class="field">
+            <div class="field-label"><span>Walk pattern</span></div>
+            <div class="seg" id="walkTypeSeg">
+              <button data-val="perimeter">Perimeter Only</button>
+              <button data-val="full" class="active">Full Coverage</button>
+            </div>
+            <div class="helper">Perimeter Only walks the outer boundary once. Full Coverage adds an interior sweep (lawnmower pattern) so the whole floor is captured.</div>
+          </div>
+
+          <div class="field">
+            <div class="field-label"><span>One-way travel distance</span><span class="val"><span id="distanceMiles-display"></span> mi</span></div>
+            <div class="row">
+              <input type="range" id="distanceMiles" min="0" max="150" step="1" value="20">
+              <input type="number" id="distanceMiles-num" min="0" max="150" step="1" value="20">
+            </div>
+            <div class="helper">Pilot's drive from home base to job site, one way.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><div class="sq"></div><h2>Capture Pace</h2><div class="note">HOW FAST / HOW WIDE</div></div>
+        <div class="panel-body">
+          <div class="field">
+            <div class="field-label"><span>Pace preset</span></div>
+            <div class="chip-row" id="pacePresets">
+              <div class="chip" data-speed="150" data-swath="160">Slow — thorough</div>
+              <div class="chip" data-speed="210" data-swath="130">Medium</div>
+              <div class="chip" data-speed="270" data-swath="100">Fast — light detail</div>
+            </div>
+          </div>
+          <div class="field">
+            <div class="field-label"><span>Walking speed</span><span class="val"><span id="speed-display"></span> ft/min</span></div>
+            <div class="row">
+              <input type="range" id="speed" min="80" max="350" step="5" value="150">
+              <input type="number" id="speed-num" min="80" max="350" step="5" value="150">
+            </div>
+          </div>
+          <div class="field" id="swathField">
+            <div class="field-label"><span>Capture swath width <span style="color:var(--text-faint)">(Full Coverage only)</span></span><span class="val"><span id="swath-display"></span> ft</span></div>
+            <div class="row">
+              <input type="range" id="swath" min="20" max="250" step="5" value="160">
+              <input type="number" id="swath-num" min="20" max="250" step="5" value="160">
+            </div>
+            <div class="helper">Effective ground width covered per interior pass — wider for tall/open spaces, narrower for tight or obstructed floors.</div>
+          </div>
+          <div class="field">
+            <div class="field-label"><span>Setup &amp; teardown buffer</span><span class="val"><span id="buffer-display"></span> min</span></div>
+            <input type="range" id="buffer" min="0" max="30" step="1" value="10">
+          </div>
+          <div class="field">
+            <div class="field-label"><span>Assumed drive speed</span><span class="val"><span id="driveSpeed-display"></span> mph</span></div>
+            <input type="range" id="driveSpeed" min="25" max="70" step="1" value="45">
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><div class="sq"></div><h2>Frequency &amp; Contract</h2><div class="note">HOW OFTEN</div></div>
+        <div class="panel-body">
+          <div class="field">
+            <div class="field-label"><span>Visits per week</span><span class="val"><span id="visitsWeek-display"></span>×/wk</span></div>
+            <input type="range" id="visitsWeek" min="0.25" max="7" step="0.25" value="2">
+            <div class="chip-row">
+              <div class="chip" data-freq="0.25">Monthly</div>
+              <div class="chip" data-freq="1">Weekly</div>
+              <div class="chip" data-freq="2">2×/week</div>
+              <div class="chip" data-freq="3">3×/week</div>
+              <div class="chip" data-freq="5">5×/week</div>
+            </div>
+          </div>
+          <div class="field">
+            <div class="field-label"><span>Contract length</span><span class="val"><span id="weeks-display"></span> wks</span></div>
+            <input type="range" id="weeks" min="1" max="104" step="1" value="52">
+          </div>
+          <div class="field" style="margin-bottom:0;">
+            <label class="checkline"><input type="checkbox" id="firstVisit" checked> This run includes the first visit (OpenSpace AI-training double-walk)</label>
+          </div>
+        </div>
+      </div>
+
+      <details>
+        <summary>Pricing model — pilot pay &amp; margin (Tasha's levers)</summary>
+        <div class="panel-body">
+          <div class="field">
+            <div class="field-label"><span>Base fee per visit</span><span class="val">$<span id="baseFee-display"></span></span></div>
+            <input type="range" id="baseFee" min="0" max="150" step="5" value="60">
+          </div>
+          <div class="field">
+            <div class="field-label"><span>Hourly rate (on-site time)</span><span class="val">$<span id="hourlyRate-display"></span>/hr</span></div>
+            <input type="range" id="hourlyRate" min="30" max="120" step="1" value="65">
+          </div>
+          <div class="field">
+            <div class="field-label"><span>Mileage rate</span><span class="val">$<span id="mileageRate-display"></span>/mi</span></div>
+            <input type="range" id="mileageRate" min="0.30" max="1.20" step="0.01" value="0.67">
+          </div>
+          <div class="field">
+            <label class="checkline" style="margin-bottom:8px;"><input type="checkbox" id="applyBonus" checked> Recurring-route bonus (≥1 visit/week)</label>
+            <div class="field-label"><span>Bonus %</span><span class="val"><span id="bonusPct-display"></span>%</span></div>
+            <input type="range" id="bonusPct" min="0" max="25" step="1" value="10">
+          </div>
+          <div class="field">
+            <div class="field-label"><span>Minimum payout guarantee</span><span class="val">$<span id="minGuarantee-display"></span></span></div>
+            <input type="range" id="minGuarantee" min="0" max="100" step="5" value="50">
+          </div>
+          <div class="field">
+            <div class="field-label"><span>CapturePro margin (% of customer price)</span><span class="val"><span id="marginPct-display"></span>%</span></div>
+            <input type="range" id="marginPct" min="0" max="60" step="1" value="30">
+          </div>
+          <hr class="div">
+          <div class="field">
+            <div class="field-label"><span>Site setup fee (first visit, one-time)</span><span class="val">$<span id="setupFee-display"></span></span></div>
+            <input type="range" id="setupFee" min="0" max="500" step="10" value="150">
+            <div class="helper">Covers OpenSpace's required double-walk on a new site. Passed through, not marked up.</div>
+          </div>
+          <div class="field" style="margin-bottom:0;">
+            <div class="field-label"><span>AI-training walk pay <span style="color:var(--text-faint)">(% of standard visit pay)</span></span><span class="val"><span id="trainingRate-display"></span>%</span></div>
+            <input type="range" id="trainingRate" min="0" max="100" step="5" value="50">
+            <div class="helper">Maps to PRD Open Question #1 — reduced rate for the first training pass, still TBD. Adjust here to test options.</div>
+          </div>
+        </div>
+      </details>
+    </div>
+
+    <!-- RIGHT: RESULTS -->
+    <div class="results">
+      <div class="panel" style="margin-bottom:0;">
+        <div class="results-head">Visit Spec Sheet</div>
+
+        <div class="spec-group">
+          <div class="spec-group-title">Walk &amp; Time</div>
+          <div class="spec-row"><span class="label">Walk distance</span><span class="leader"></span><span class="value" id="out-distance"></span></div>
+          <div class="spec-row"><span class="label">Capture time</span><span class="leader"></span><span class="value" id="out-captureTime"></span></div>
+          <div class="spec-row"><span class="label">Round-trip drive</span><span class="leader"></span><span class="value" id="out-driveTime"></span></div>
+          <div class="spec-row total"><span class="label">Total job time</span><span class="leader"></span><span class="value" id="out-totalTime"></span></div>
+        </div>
+
+        <hr class="div" style="margin:4px 18px;">
+
+        <div class="spec-group">
+          <div class="spec-group-title">Pilot Payout — Standard Visit</div>
+          <div class="spec-row sub"><span class="label">Base fee</span><span class="leader"></span><span class="value" id="out-base"></span></div>
+          <div class="spec-row sub"><span class="label">Time pay</span><span class="leader"></span><span class="value" id="out-timepay"></span></div>
+          <div class="spec-row sub"><span class="label">Mileage</span><span class="leader"></span><span class="value" id="out-milepay"></span></div>
+          <div class="spec-row sub"><span class="label">Recurring bonus</span><span class="leader"></span><span class="value" id="out-bonus"></span></div>
+          <div class="spec-row total"><span class="label">Pilot payout</span><span class="leader"></span><span class="value" id="out-payout"></span></div>
+          <div class="spec-row sub"><span class="label">Effective hourly rate</span><span class="leader"></span><span class="value" id="out-effhourly"></span></div>
+        </div>
+
+        <div class="flag" id="guaranteeFlag" style="display:none;">Minimum guarantee applied — calculated payout was below the floor you set.</div>
+
+        <hr class="div" style="margin:4px 18px;">
+
+        <div class="spec-group">
+          <div class="spec-group-title">Customer Price — Standard Visit</div>
+          <div class="spec-row total"><span class="label">Customer pays</span><span class="leader"></span><span class="value" id="out-custprice"></span></div>
+        </div>
+
+        <div class="spec-group" id="firstVisitGroup">
+          <div class="spec-group-title">First-Visit Totals (incl. training walk)</div>
+          <div class="spec-row sub"><span class="label">Training walk pay</span><span class="leader"></span><span class="value" id="out-trainpay"></span></div>
+          <div class="spec-row"><span class="label">Pilot — first visit</span><span class="leader"></span><span class="value" id="out-firstpilot"></span></div>
+          <div class="spec-row sub"><span class="label">+ Site setup fee</span><span class="leader"></span><span class="value" id="out-setupfeeline"></span></div>
+          <div class="spec-row total"><span class="label">Customer — first visit</span><span class="leader"></span><span class="value" id="out-firstcust"></span></div>
+        </div>
+
+        <hr class="div" style="margin:4px 18px;">
+
+        <div class="spec-group">
+          <div class="spec-group-title">Recurring Projections</div>
+          <table class="proj-table">
+            <tr><th></th><th>Pilot</th><th>Customer</th></tr>
+            <tr><td>Weekly</td><td id="out-weeklyPilot"></td><td id="out-weeklyCust"></td></tr>
+            <tr><td>Monthly</td><td id="out-monthlyPilot"></td><td id="out-monthlyCust"></td></tr>
+            <tr><td>Annual</td><td id="out-annualPilot"></td><td id="out-annualCust"></td></tr>
+            <tr><td id="out-contractLabel">Contract</td><td id="out-contractPilot"></td><td id="out-contractCust"></td></tr>
+          </table>
+        </div>
+
+        <div class="footnote"><b>Reading this sheet:</b> "Pilot" is what the Drone Brothers pilot earns; "Customer" is the full billed rate including CapturePro's margin. All rates above are adjustable planning assumptions — treat as a starting point until validated against real completed routes.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const fmtUSD = n => '$' + n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const fmtUSD0 = n => '$' + Math.round(n).toLocaleString('en-US');
+const fmtNum = n => Math.round(n).toLocaleString('en-US');
+
+function minToHM(min){
+  const h = Math.floor(min/60), m = Math.round(min%60);
+  return h>0 ? `${h}h ${m}m` : `${m} min`;
+}
+
+// two-way sync helper for slider+number pairs
+function syncPair(sliderId, numId, displayId, onChange, isFloat){
+  const slider = $(sliderId), num = $(numId), disp = displayId?$(displayId):null;
+  function set(v){
+    slider.value = v; if(num) num.value = v;
+    if(disp) disp.textContent = isFloat ? Number(v).toFixed(2) : fmtNum(v);
+    onChange();
+  }
+  slider.addEventListener('input', ()=>set(slider.value));
+  if(num) num.addEventListener('input', ()=>set(num.value));
+  set(slider.value);
+}
+
+function simpleSlider(id, displayId, isFloat, onChange){
+  const el = $(id), disp = $(displayId);
+  function set(){ disp.textContent = isFloat ? Number(el.value).toFixed(2) : fmtNum(el.value); onChange(); }
+  el.addEventListener('input', set);
+  set();
+}
+
+let walkType = 'full';
+let recalc = ()=>{};
+
+// segmented control for walk type
+document.querySelectorAll('#walkTypeSeg button').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('#walkTypeSeg button').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    walkType = btn.dataset.val;
+    $('swathField').style.opacity = walkType==='full' ? '1' : '.35';
+    recalc();
+  });
+});
+
+// pace presets
+document.querySelectorAll('#pacePresets .chip').forEach(chip=>{
+  chip.addEventListener('click', ()=>{
+    $('speed').value = chip.dataset.speed; $('speed-num').value = chip.dataset.speed;
+    $('swath').value = chip.dataset.swath; $('swath-num').value = chip.dataset.swath;
+    $('speed-display').textContent = chip.dataset.speed;
+    $('swath-display').textContent = chip.dataset.swath;
+    recalc();
+  });
+});
+
+// frequency presets
+document.querySelectorAll('[data-freq]').forEach(chip=>{
+  chip.addEventListener('click', ()=>{
+    $('visitsWeek').value = chip.dataset.freq;
+    $('visitsWeek-display').textContent = Number(chip.dataset.freq).toFixed(2);
+    recalc();
+  });
+});
+
+recalc = function(){
+  const areaSqft = Number($('areaVal').value);
+  const distanceMiles = Number($('distanceMiles').value);
+  const speed = Number($('speed').value);
+  const swath = Number($('swath').value);
+  const buffer = Number($('buffer').value);
+  const driveSpeed = Number($('driveSpeed').value);
+  const visitsWeek = Number($('visitsWeek').value);
+  const weeks = Number($('weeks').value);
+  const baseFee = Number($('baseFee').value);
+  const hourlyRate = Number($('hourlyRate').value);
+  const mileageRate = Number($('mileageRate').value);
+  const applyBonus = $('applyBonus').checked;
+  const bonusPct = Number($('bonusPct').value);
+  const minGuarantee = Number($('minGuarantee').value);
+  const marginPct = Number($('marginPct').value);
+  const setupFee = Number($('setupFee').value);
+  const trainingRate = Number($('trainingRate').value);
+  const isFirstVisit = $('firstVisit').checked;
+
+  // geometry
+  const side = Math.sqrt(areaSqft);
+  const perimeterFt = 4*side;
+  const walkDistanceFt = walkType==='perimeter' ? perimeterFt : perimeterFt + areaSqft/swath;
+  const captureTimeMin = walkDistanceFt/speed;
+
+  const roundTripMiles = distanceMiles*2;
+  const driveTimeMin = driveSpeed>0 ? (roundTripMiles/driveSpeed)*60 : 0;
+
+  const onSiteTimeHrs = (captureTimeMin+buffer)/60;
+  const totalTimeHrs = (captureTimeMin+buffer+driveTimeMin)/60;
+
+  // pilot payout
+  const timePay = onSiteTimeHrs*hourlyRate;
+  const milePay = roundTripMiles*mileageRate;
+  const subtotal = baseFee+timePay+milePay;
+  const bonus = (applyBonus && visitsWeek>=1) ? subtotal*bonusPct/100 : 0;
+  const rawPayout = subtotal+bonus;
+  const guaranteeApplied = rawPayout < minGuarantee;
+  const pilotPayout = Math.max(rawPayout, minGuarantee);
+  const effHourly = totalTimeHrs>0 ? pilotPayout/totalTimeHrs : 0;
+
+  const customerPrice = marginPct<100 ? pilotPayout/(1-marginPct/100) : pilotPayout;
+
+  const trainPay = pilotPayout*trainingRate/100;
+  const firstPilotTotal = pilotPayout+trainPay;
+  const firstCustTotal = customerPrice+setupFee;
+
+  // projections (recurring visits at standard rate)
+  const weeklyPilot = pilotPayout*visitsWeek;
+  const weeklyCust = customerPrice*visitsWeek;
+  const monthlyPilot = weeklyPilot*4.33, monthlyCust = weeklyCust*4.33;
+  const annualPilot = weeklyPilot*52, annualCust = weeklyCust*52;
+
+  let contractPilot = pilotPayout*visitsWeek*weeks;
+  let contractCust = customerPrice*visitsWeek*weeks;
+  if(isFirstVisit){
+    contractPilot += trainPay;
+    contractCust += setupFee;
+  }
+
+  // area helper
+  $('areaVal-display').textContent = fmtNum(areaSqft);
+  $('areaVal-num').value = areaSqft;
+  $('areaSqm').textContent = `≈ ${fmtNum(areaSqft/10.7639)} sq m`;
+
+  // outputs
+  $('out-distance').textContent = `${fmtNum(walkDistanceFt)} ft  (${(walkDistanceFt/5280).toFixed(2)} mi)`;
+  $('out-captureTime').textContent = minToHM(captureTimeMin);
+  $('out-driveTime').textContent = minToHM(driveTimeMin) + ` (${roundTripMiles} mi RT)`;
+  $('out-totalTime').textContent = minToHM(totalTimeHrs*60);
+
+  $('out-base').textContent = fmtUSD0(baseFee);
+  $('out-timepay').textContent = fmtUSD0(timePay);
+  $('out-milepay').textContent = fmtUSD0(milePay);
+  $('out-bonus').textContent = fmtUSD0(bonus);
+  $('out-payout').textContent = fmtUSD0(pilotPayout);
+  $('out-effhourly').textContent = fmtUSD(effHourly)+'/hr';
+  $('guaranteeFlag').style.display = guaranteeApplied ? 'block' : 'none';
+
+  $('out-custprice').textContent = fmtUSD0(customerPrice);
+
+  $('firstVisitGroup').style.display = isFirstVisit ? 'block' : 'none';
+  $('out-trainpay').textContent = fmtUSD0(trainPay);
+  $('out-firstpilot').textContent = fmtUSD0(firstPilotTotal);
+  $('out-setupfeeline').textContent = fmtUSD0(setupFee);
+  $('out-firstcust').textContent = fmtUSD0(firstCustTotal);
+
+  $('out-weeklyPilot').textContent = fmtUSD0(weeklyPilot);
+  $('out-weeklyCust').textContent = fmtUSD0(weeklyCust);
+  $('out-monthlyPilot').textContent = fmtUSD0(monthlyPilot);
+  $('out-monthlyCust').textContent = fmtUSD0(monthlyCust);
+  $('out-annualPilot').textContent = fmtUSD0(annualPilot);
+  $('out-annualCust').textContent = fmtUSD0(annualCust);
+  $('out-contractLabel').textContent = `${weeks}-wk contract`;
+  $('out-contractPilot').textContent = fmtUSD0(contractPilot);
+  $('out-contractCust').textContent = fmtUSD0(contractCust);
+};
+
+// wire all pairs
+syncPair('areaVal','areaVal-num',null,()=>recalc());
+syncPair('distanceMiles','distanceMiles-num','distanceMiles-display',()=>recalc());
+syncPair('speed','speed-num','speed-display',()=>recalc());
+syncPair('swath','swath-num','swath-display',()=>recalc());
+simpleSlider('buffer','buffer-display',false,()=>recalc());
+simpleSlider('driveSpeed','driveSpeed-display',false,()=>recalc());
+simpleSlider('visitsWeek','visitsWeek-display',true,()=>recalc());
+simpleSlider('weeks','weeks-display',false,()=>recalc());
+simpleSlider('baseFee','baseFee-display',false,()=>recalc());
+simpleSlider('hourlyRate','hourlyRate-display',false,()=>recalc());
+simpleSlider('mileageRate','mileageRate-display',true,()=>recalc());
+simpleSlider('bonusPct','bonusPct-display',false,()=>recalc());
+simpleSlider('minGuarantee','minGuarantee-display',false,()=>recalc());
+simpleSlider('marginPct','marginPct-display',false,()=>recalc());
+simpleSlider('setupFee','setupFee-display',false,()=>recalc());
+simpleSlider('trainingRate','trainingRate-display',false,()=>recalc());
+$('applyBonus').addEventListener('change', recalc);
+$('firstVisit').addEventListener('change', recalc);
+
+recalc();
+</script>
+</body>
+</html>
