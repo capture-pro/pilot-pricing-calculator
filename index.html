@@ -100,6 +100,7 @@
     font-family:var(--mono);font-size:11px;padding:6px 10px;cursor:pointer;
   }
   .chip:hover{border-color:var(--orange);color:var(--text);}
+  .chip.active{background:var(--orange);border-color:var(--orange);color:#14161a;font-weight:600;}
 
   .checkline{display:flex;align-items:center;gap:9px;font-size:12.5px;color:var(--text-dim);cursor:pointer;user-select:none;}
   .checkline input{accent-color:var(--orange);width:15px;height:15px;}
@@ -198,23 +199,24 @@
           <div class="field">
             <div class="field-label"><span>Pace preset</span></div>
             <div class="chip-row" id="pacePresets">
-              <div class="chip" data-speed="150" data-swath="160">Slow — thorough</div>
-              <div class="chip" data-speed="210" data-swath="130">Medium</div>
-              <div class="chip" data-speed="270" data-swath="100">Fast — light detail</div>
+              <div class="chip active" data-speed="125" data-swath="20">OpenSpace published (2,500 sqft/min)</div>
+              <div class="chip" data-speed="170" data-swath="40">Medium</div>
+              <div class="chip" data-speed="210" data-swath="64">Fast — light detail</div>
             </div>
+            <div class="helper">"OpenSpace published" is calibrated to OpenSpace's own stated average: 25,000 sqft documented in 10 minutes (2,500 sqft/min). Use this as the planning default; the others are optimistic comparisons only.</div>
           </div>
           <div class="field">
             <div class="field-label"><span>Walking speed</span><span class="val"><span id="speed-display"></span> ft/min</span></div>
             <div class="row">
-              <input type="range" id="speed" min="80" max="350" step="5" value="150">
-              <input type="number" id="speed-num" min="80" max="350" step="5" value="150">
+              <input type="range" id="speed" min="80" max="350" step="5" value="125">
+              <input type="number" id="speed-num" min="80" max="350" step="5" value="125">
             </div>
           </div>
           <div class="field" id="swathField">
             <div class="field-label"><span>Capture swath width <span style="color:var(--text-faint)">(Full Coverage only)</span></span><span class="val"><span id="swath-display"></span> ft</span></div>
             <div class="row">
-              <input type="range" id="swath" min="20" max="250" step="5" value="160">
-              <input type="number" id="swath-num" min="20" max="250" step="5" value="160">
+              <input type="range" id="swath" min="10" max="250" step="5" value="20">
+              <input type="number" id="swath-num" min="10" max="250" step="5" value="20">
             </div>
             <div class="helper">Effective ground width covered per interior pass — wider for tall/open spaces, narrower for tight or obstructed floors.</div>
           </div>
@@ -278,8 +280,8 @@
             <input type="range" id="minGuarantee" min="0" max="100" step="5" value="50">
           </div>
           <div class="field">
-            <div class="field-label"><span>CapturePro margin (% of customer price)</span><span class="val"><span id="marginPct-display"></span>%</span></div>
-            <input type="range" id="marginPct" min="0" max="60" step="1" value="30">
+            <div class="field-label"><span>Target margin (sets customer price; Service Fee splits 50/50 with Drone Brothers)</span><span class="val"><span id="marginPct-display"></span>%</span></div>
+            <input type="range" id="marginPct" min="0" max="60" step="1" value="35">
           </div>
           <hr class="div">
           <div class="field">
@@ -294,9 +296,39 @@
           </div>
         </div>
       </details>
+
+      <details open>
+        <summary>Portfolio mode — program-scale economics</summary>
+        <div class="panel-body">
+          <div class="field">
+            <div class="field-label"><span>Addressable projects</span><span class="val"><span id="portTotal-display"></span></span></div>
+            <div class="row">
+              <input type="range" id="portTotal" min="1000" max="150000" step="1000" value="50000">
+              <input type="number" id="portTotal-num" min="1000" max="150000" step="1000" value="50000">
+            </div>
+            <div class="helper">OpenSpace's own site claims 100K+ active projects platform-wide — 50,000 is a conservative planning slice.</div>
+          </div>
+          <div class="field">
+            <div class="field-label"><span>CaaS capture share</span><span class="val"><span id="portShare-display"></span>%</span></div>
+            <input type="range" id="portShare" min="0.5" max="25" step="0.5" value="3">
+          </div>
+          <div class="field">
+            <div class="field-label"><span>Site size range</span><span class="val"><span id="portMin-display"></span> – <span id="portMax-display"></span> sqft</span></div>
+            <div class="row">
+              <input type="range" id="portMin" min="50000" max="1000000" step="50000" value="500000">
+              <input type="range" id="portMax" min="500000" max="4000000" step="50000" value="2000000">
+            </div>
+            <div class="helper">Portfolio economics use the average of four sizes spanning this range, at the pace/pricing settings above.</div>
+          </div>
+          <div class="field" style="margin-bottom:0;">
+            <div class="field-label"><span>Hours a pilot works per week</span><span class="val"><span id="portPilotHrs-display"></span> hrs</span></div>
+            <input type="range" id="portPilotHrs" min="10" max="50" step="5" value="35">
+            <div class="helper">Used only to estimate how many pilots this program needs to staff.</div>
+          </div>
+        </div>
+      </details>
     </div>
 
-    <!-- RIGHT: RESULTS -->
     <div class="results">
       <div class="panel" style="margin-bottom:0;">
         <div class="results-head">Visit Spec Sheet</div>
@@ -328,6 +360,9 @@
         <div class="spec-group">
           <div class="spec-group-title">Customer Price — Standard Visit</div>
           <div class="spec-row total"><span class="label">Customer pays</span><span class="leader"></span><span class="value" id="out-custprice"></span></div>
+          <div class="spec-row sub"><span class="label">Service fee (above pilot pay)</span><span class="leader"></span><span class="value" id="out-servicefee"></span></div>
+          <div class="spec-row sub"><span class="label">→ CapturePro (50%)</span><span class="leader"></span><span class="value" id="out-cpshare"></span></div>
+          <div class="spec-row sub"><span class="label">→ Drone Brothers (50%)</span><span class="leader"></span><span class="value" id="out-dbshare"></span></div>
         </div>
 
         <div class="spec-group" id="firstVisitGroup">
@@ -353,6 +388,22 @@
 
         <div class="footnote"><b>Reading this sheet:</b> "Pilot" is what the Drone Brothers pilot earns; "Customer" is the full billed rate including CapturePro's margin. All rates above are adjustable planning assumptions — treat as a starting point until validated against real completed routes.</div>
       </div>
+    </div>
+  </div>
+</div>
+
+<div class="shell" style="padding-top:0;">
+  <div class="panel" id="portfolioPanel">
+    <div class="panel-head"><div class="sq"></div><h2>Portfolio Economics</h2><div class="note">PROGRAM-SCALE, AT SETTINGS ABOVE</div></div>
+    <div class="panel-body">
+      <table class="proj-table" style="width:100%;">
+        <tr><th style="text-align:left;">Cadence</th><th>Sites active</th><th>Pilot pool</th><th>Drone Brothers (50%)</th><th>CapturePro (50%)</th><th>Customer revenue</th></tr>
+        <tr><td>Weekly</td><td id="pf-sites"></td><td id="pf-weekly-pilot"></td><td id="pf-weekly-db"></td><td id="pf-weekly-cp"></td><td id="pf-weekly-cust"></td></tr>
+        <tr><td>Monthly</td><td></td><td id="pf-monthly-pilot"></td><td id="pf-monthly-db"></td><td id="pf-monthly-cp"></td><td id="pf-monthly-cust"></td></tr>
+        <tr><td>Annual</td><td></td><td id="pf-annual-pilot"></td><td id="pf-annual-db"></td><td id="pf-annual-cp"></td><td id="pf-annual-cust"></td></tr>
+      </table>
+      <div class="helper" style="margin-top:14px;font-size:12px;" id="pf-workforce"></div>
+      <div class="flag" style="margin:14px 0 0;">Sanity check, not a promise: this scales the single-visit model above linearly across every site. Real rollouts ramp gradually, and pilot availability, weather, and site access will all move these numbers. Treat this as a planning ceiling, not a forecast.</div>
     </div>
   </div>
 </div>
@@ -405,6 +456,8 @@ document.querySelectorAll('#walkTypeSeg button').forEach(btn=>{
 // pace presets
 document.querySelectorAll('#pacePresets .chip').forEach(chip=>{
   chip.addEventListener('click', ()=>{
+    document.querySelectorAll('#pacePresets .chip').forEach(c=>c.classList.remove('active'));
+    chip.classList.add('active');
     $('speed').value = chip.dataset.speed; $('speed-num').value = chip.dataset.speed;
     $('swath').value = chip.dataset.swath; $('swath-num').value = chip.dataset.swath;
     $('speed-display').textContent = chip.dataset.speed;
@@ -503,6 +556,10 @@ recalc = function(){
   $('guaranteeFlag').style.display = guaranteeApplied ? 'block' : 'none';
 
   $('out-custprice').textContent = fmtUSD0(customerPrice);
+  const serviceFee = customerPrice-pilotPayout;
+  $('out-servicefee').textContent = fmtUSD0(serviceFee);
+  $('out-cpshare').textContent = fmtUSD0(serviceFee/2);
+  $('out-dbshare').textContent = fmtUSD0(serviceFee/2);
 
   $('firstVisitGroup').style.display = isFirstVisit ? 'block' : 'none';
   $('out-trainpay').textContent = fmtUSD0(trainPay);
@@ -519,6 +576,65 @@ recalc = function(){
   $('out-contractLabel').textContent = `${weeks}-wk contract`;
   $('out-contractPilot').textContent = fmtUSD0(contractPilot);
   $('out-contractCust').textContent = fmtUSD0(contractCust);
+
+  // ---- Portfolio mode ----
+  const portTotal = Number($('portTotal').value);
+  const portShare = Number($('portShare').value);
+  const portMin = Number($('portMin').value);
+  const portMax = Number($('portMax').value);
+  const portPilotHrs = Number($('portPilotHrs').value);
+  $('portTotal-display').textContent = fmtNum(portTotal);
+  $('portTotal-num').value = portTotal;
+  $('portShare-display').textContent = portShare;
+  $('portMin-display').textContent = fmtNum(portMin);
+  $('portMax-display').textContent = fmtNum(portMax);
+  $('portPilotHrs-display').textContent = portPilotHrs;
+
+  const nSites = portTotal*portShare/100;
+  const sampleSizes = [0,1,2,3].map(i => portMin + (portMax-portMin)*i/3);
+  let sumPayout=0, sumCust=0, sumTotalHrs=0;
+  sampleSizes.forEach(a=>{
+    const s = Math.sqrt(a);
+    const p = 4*s;
+    const wd = walkType==='perimeter' ? p : p + a/swath;
+    const cMin = wd/speed;
+    const onHrs = (cMin+buffer)/60;
+    const totHrs = onHrs + driveTimeMin/60;
+    const tPay = onHrs*hourlyRate;
+    const mPay = roundTripMiles*mileageRate;
+    const sub = baseFee+tPay+mPay;
+    const bns = (applyBonus && visitsWeek>=1) ? sub*bonusPct/100 : 0;
+    const pay = Math.max(sub+bns, minGuarantee);
+    const cust = marginPct<100 ? pay/(1-marginPct/100) : pay;
+    sumPayout += pay; sumCust += cust; sumTotalHrs += totHrs;
+  });
+  const avgPayout = sumPayout/sampleSizes.length;
+  const avgCust = sumCust/sampleSizes.length;
+  const avgTotalHrs = sumTotalHrs/sampleSizes.length;
+  const avgServiceFee = avgCust-avgPayout;
+
+  const wPilot = avgPayout*nSites*visitsWeek;
+  const wCust = avgCust*nSites*visitsWeek;
+  const wServiceFee = avgServiceFee*nSites*visitsWeek;
+  const wDb = wServiceFee/2, wCp = wServiceFee/2;
+
+  $('pf-sites').textContent = fmtNum(nSites);
+  $('pf-weekly-pilot').textContent = fmtUSD0(wPilot);
+  $('pf-weekly-db').textContent = fmtUSD0(wDb);
+  $('pf-weekly-cp').textContent = fmtUSD0(wCp);
+  $('pf-weekly-cust').textContent = fmtUSD0(wCust);
+  $('pf-monthly-pilot').textContent = fmtUSD0(wPilot*4.33);
+  $('pf-monthly-db').textContent = fmtUSD0(wDb*4.33);
+  $('pf-monthly-cp').textContent = fmtUSD0(wCp*4.33);
+  $('pf-monthly-cust').textContent = fmtUSD0(wCust*4.33);
+  $('pf-annual-pilot').textContent = fmtUSD0(wPilot*52);
+  $('pf-annual-db').textContent = fmtUSD0(wDb*52);
+  $('pf-annual-cp').textContent = fmtUSD0(wCp*52);
+  $('pf-annual-cust').textContent = fmtUSD0(wCust*52);
+
+  const weeklyHours = avgTotalHrs*nSites*visitsWeek;
+  const pilotsNeeded = portPilotHrs>0 ? Math.ceil(weeklyHours/portPilotHrs) : 0;
+  $('pf-workforce').textContent = `Estimated field hours: ${fmtNum(weeklyHours)} hrs/week across ${fmtNum(nSites)} active sites → roughly ${fmtNum(pilotsNeeded)} pilots needed at ${portPilotHrs} hrs/week each.`;
 };
 
 // wire all pairs
@@ -540,6 +656,11 @@ simpleSlider('setupFee','setupFee-display',false,()=>recalc());
 simpleSlider('trainingRate','trainingRate-display',false,()=>recalc());
 $('applyBonus').addEventListener('change', recalc);
 $('firstVisit').addEventListener('change', recalc);
+syncPair('portTotal','portTotal-num',null,()=>recalc());
+simpleSlider('portShare','portShare-display',true,()=>recalc());
+simpleSlider('portMin','portMin-display',false,()=>recalc());
+simpleSlider('portMax','portMax-display',false,()=>recalc());
+simpleSlider('portPilotHrs','portPilotHrs-display',false,()=>recalc());
 
 recalc();
 </script>
